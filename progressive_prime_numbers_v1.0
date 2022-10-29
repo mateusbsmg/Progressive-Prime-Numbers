@@ -1,0 +1,84 @@
+import pandas as pd
+import time
+from datetime import datetime, timedelta
+from dateutil.relativedelta import *
+
+def sleep_int(t):
+    ctime = 0
+    while ctime < t:
+        ctime = ctime + 1
+        time.sleep(0.1)
+        
+df = pd.DataFrame(columns=list(['i', 'last_time', 'next_time', 'toogle']))
+
+constant = 5
+value_1 = 2
+
+now =  datetime.now()
+now = now.replace(second=0, microsecond=0)
+now = (now + relativedelta(minutes = 1))
+
+last_time = now.time()
+last_time = last_time.replace(microsecond=0)
+
+next_time_1 = (now + relativedelta(seconds = value_1 * constant)).time()
+
+next_time = (now + relativedelta(seconds = value_1 * constant)).time()
+next_time = next_time.replace(microsecond=0)
+df.loc[0] = [value_1, last_time, next_time, 0]
+
+flag = False
+c = 1
+
+while True:
+    
+    now_1 =  datetime.now()
+    now_1 = now_1.replace(microsecond=0)
+    
+    if next_time_1 < datetime.now().time():
+        print(now_1)
+        next_time_1 = (now_1 + relativedelta(seconds = constant)).time()
+        flag = True
+        
+    for i in df[df['next_time'] < datetime.now().time()].index:
+        df.loc[i, 'toogle'] = ~df.loc[i]['toogle']
+        next_time = (datetime.now()+ relativedelta(seconds = df.loc[i]['i'] * constant)).time()
+        next_time = next_time.replace(microsecond=0)
+        df.loc[i, 'next_time'] = next_time
+        
+    if flag == True:
+        print(df)
+        flag = False
+        c = c + 1
+        
+        if (len(df[df['toogle'] == 0]) == len(df)):
+            print('\nNew Prime Number: ' + str(c) + '\n')
+            df.loc[len(df)] = [c, last_time, last_time, 0]
+            
+            now =  datetime.now()
+            now = now.replace(second=0, microsecond=0)
+            now = (now + relativedelta(minutes = 1))
+
+            for i in range(len(df)):
+                next_time = (now + relativedelta(seconds = df.loc[i]['i'] * constant)).time()
+                next_time = next_time.replace(microsecond=0)
+                df.loc[i, 'next_time'] = next_time
+            
+            next_time_1 = (now + relativedelta(seconds = value_1 * constant)).time()
+            df['toogle'] = 0
+            
+            c = 1
+     
+    min_time = df.sort_values('next_time')['next_time'].head(1).values[0] 
+    max_time = df.sort_values('last_time')['last_time'].tail(1).values[0] 
+        
+    if (datetime.now().time() < min_time):
+        df['last_time'] = df['next_time']
+        
+    #else:
+    #    print('time lost')
+    #    break
+        
+    df['toogle'] = 0
+    
+    sleep_int(1)
