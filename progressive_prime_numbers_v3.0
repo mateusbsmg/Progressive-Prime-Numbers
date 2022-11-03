@@ -1,0 +1,171 @@
+######################################
+__author__ = "Mateus Barbosa da Silva"
+__copyright__ = "Copyright 2022"
+__license__ = "GPL v3.0"
+__version__ = "2.0"
+__email__ = "mateusbsmg@gmail.com"
+######################################
+
+
+import pandas as pd
+import csv
+import time
+from datetime import datetime, timedelta
+from dateutil.relativedelta import *
+import pickle
+
+
+def sleep_int(t):
+    ctime = 0
+    while ctime < t:
+        ctime = ctime + 1
+        time.sleep(0.001)
+        
+def lines_csv():
+    r = pd.read_csv('prime_numbers.csv')
+    return(len(r))
+
+def write_csv(number):
+    with open('prime_numbers.csv', mode='a', newline='') as file:
+        file_writer = csv.writer(file, delimiter=';')
+        line = lines_csv() + 1
+        file_writer.writerow([line, number])
+        file.close()
+        
+def write_pkl(df):
+    with open('df.pkl', 'wb') as file:
+        pickle.dump(df, file)
+        file.close()
+
+def read_pkl():
+    with open('df.pkl', 'rb') as file:
+        df = pickle.load(file)
+        file.close()
+    return(df)
+
+def write_date_pkl(date):
+    with open('date.pkl', 'wb') as file:
+        pickle.dump(date, file)
+        file.close()
+
+def read_date_pkl():
+    with open('date.pkl', 'rb') as file:
+        date = pickle.load(file)
+        file.close()
+    return(date)
+
+def write_counter_pkl(counter):
+    with open('counter.pkl', 'wb') as file:
+        pickle.dump(counter, file)
+        file.close()
+
+def read_counter_pkl():
+    with open('counter.pkl', 'rb') as file:
+        counter = pickle.load(file)
+        file.close()
+    return(counter)
+
+        
+id_value = 1
+constant = 1
+value_1 = 2
+
+try:
+    df = read_pkl()
+    c = read_counter_pkl()
+    
+    date = read_date_pkl()
+    
+    now = date
+    next_time = (date - relativedelta(microseconds = value_1 * constant))
+    next_time_1 = next_time
+    last_time = date
+    
+except:
+    str_time = '1900-01-01 00:00:00.0'
+    date = datetime.strptime(str_time , '%Y-%m-%d %H:%M:%S.%f')
+
+
+    df = pd.DataFrame(columns=list(['id', 'i', 'last_time', 'next_time', 'Y', 'YM', 'YMD', 'YMDH', 'YMDHM', 'YMDHMS', 'toogle']))
+
+    now = (date + relativedelta(microseconds = 0))
+    last_time = date
+
+    next_time = (now + relativedelta(microseconds = value_1 * constant))
+    next_time_1 = next_time
+
+    Y = next_time.year
+    YM = int(str(Y) + '{:02}'.format(next_time.month))
+    YMD = int(str(YM) + '{:02}'.format(next_time.day))
+    YMDH = int(str(YMD) + '{:02}'.format(next_time.hour))
+    YMDHM = int(str(YMDH) + '{:02}'.format(next_time.minute))
+    YMDHMS = int(str(YMDHM) + '{:02}'.format(next_time.second))
+
+    df.loc[0] = [id_value, value_1, last_time, next_time, Y, YM, YMD, YMDH, YMDHM, YMDHMS, 0]   
+    
+    c = 1
+
+    
+flag = False
+
+while True:
+    t = time.process_time()
+    now_1 = date
+    
+    if next_time_1 < date:
+        next_time_1 = now_1
+        flag = True
+        
+    for i in df[df['next_time'] < date].index:
+        df.loc[i, 'toogle'] = ~df.loc[i]['toogle']
+        prev_time = date - timedelta(microseconds = 1)
+        next_time = (prev_time + relativedelta(microseconds = df.loc[i]['i'] * constant))
+        
+        Y = next_time.year
+        YM = int(str(Y) + '{:02}'.format(next_time.month))
+        YMD = int(str(YM) + '{:02}'.format(next_time.day))
+        YMDH = int(str(YMD) + '{:02}'.format(next_time.hour))
+        YMDHM = int(str(YMDH) + '{:02}'.format(next_time.minute))
+        YMDHMS = int(str(YMDHM) + '{:02}'.format(next_time.second)) 
+            
+        df.loc[i] = [id_value, df.loc[i]['i'], last_time, next_time, Y, YM, YMD, YMDH, YMDHM, YMDHMS, df.loc[i]['toogle']]
+        
+    if flag == True:
+        flag = False
+        c = c + 1
+        
+        if (len(df[df['toogle'] == 0]) == len(df)):
+            print('New Prime Number: ' + str(c))
+            write_csv(c)
+            write_counter_pkl(c)
+            write_pkl(df)
+            write_date_pkl(date)
+            
+            prev_time = date - timedelta(microseconds = 1)
+            next_time = (prev_time + relativedelta(microseconds = c * constant))
+            
+            Y = next_time.year
+            YM = int(str(Y) + '{:02}'.format(next_time.month))
+            YMD = int(str(YM) + '{:02}'.format(next_time.day))
+            YMDH = int(str(YMD) + '{:02}'.format(next_time.hour))
+            YMDHM = int(str(YMDH) + '{:02}'.format(next_time.minute))
+            YMDHMS = int(str(YMDHM) + '{:02}'.format(next_time.second))            
+            
+            df.loc[len(df)] = [id_value, c, last_time, next_time, Y, YM, YMD, YMDH, YMDHM, YMDHMS, 0]
+            
+            next_time_1 = (now + relativedelta(microseconds = value_1 * constant))
+            df['toogle'] = 0
+     
+    min_time = df.sort_values('next_time')['next_time'].head(1).values[0] 
+    max_time = df.sort_values('last_time')['last_time'].tail(1).values[0] 
+        
+    if (pd.to_datetime(date) < min_time):
+        df['last_time'] = df['next_time']
+        
+    df['toogle'] = 0
+    
+    date = date + timedelta(microseconds = 1)
+    
+    sleep_int(1)
+    elapsed_time = time.process_time() - t
+    print('Process time: ' + str(elapsed_time))
